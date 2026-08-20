@@ -1,0 +1,1 @@
+class SocketServer: pass

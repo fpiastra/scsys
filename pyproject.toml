@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scsys"
+version = "0.1.0"
+description = "General Slow Control System"
+requires-python = ">=3.11"
+
+[project.scripts]
+scctl = "scsys.cli.scctl:main"
+scd = "scsys.scd.daemon:main"
+
+[tool.setuptools.packages.find]
+include = ["scsys*"]
