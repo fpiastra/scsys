@@ -57,6 +57,8 @@ class ProcessManager:
             "name": device_info.name,
             "type": device_info.type_name,
             "config": device_info.device_config,
+            "rconfig": device_info.runtime_config,
+            "watchdog": device_info.watchdog_config,
             "pid": None,
             "process_started": None,
             "heartbeat": None

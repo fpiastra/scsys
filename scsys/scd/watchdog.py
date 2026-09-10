@@ -110,7 +110,6 @@ class Watchdog:
         Build the effective watchdog configuration for one device.
 
         Precedence is:
-
             1) global watchdog config
             2) device watchdog config from setup.json
             3) watchdog config from the runtime JSON
@@ -183,6 +182,7 @@ class Watchdog:
 
         while self.running:
             now = time.monotonic()
+
             #
             # Future:
             # poll watchdog socket
@@ -193,6 +193,7 @@ class Watchdog:
                     now + self.config.cycle_time_interval
                 )
             #
+            
             time.sleep(0.1) #TODO: Remove this once the Watchdog socket is implementeed
         #
     #

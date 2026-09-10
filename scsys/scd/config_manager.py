@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 import yaml
 
+from ..devices import discover_devices
+
 
 DEFAULT_RUNTIME_DIR = Path("/run/scsys")
 
@@ -22,8 +24,6 @@ class ScdConfig:
     setup_file: Path
 
     runtime_dir: Path
-
-    devs_defs_dir: Path|None = None #The path were there are the definitions of the devices
 
     log_level: str = "INFO"
 
@@ -93,19 +93,24 @@ class ConfigManager:
         #   3. DEFAULT_RUNTIME_DIR
         #
         runtime_dir = Path(
-            os.environ.get(
-                "SCSYS_RUNTIME_DIR",
-                cfg.get(
-                    "runtime_dir",
+            cfg.get(
+                "runtime_dir",
+                os.environ.get(
+                    "SCSYS_RUNTIME_DIR",
                     DEFAULT_RUNTIME_DIR
                 )
             )
         ).expanduser().resolve()
 
-        devs_defs_dir = cfg.get("devs_dir")
+        devs_defs_dir = cfg.get(
+            "devs_dir",
+            os.environ.get( "SCSYS_DEVS_DIR")
+        )
+
         if not devs_defs_dir is None:
             devs_defs_dir = Path(devs_defs_dir).expanduser().resolve()
         #
+        discover_devices(devs_defs_dir)
 
         #
         # Build the common configuration object.
