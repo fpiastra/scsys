@@ -15,7 +15,7 @@ class DeviceRegistry:
         self.devices.clear()
         
         with self.setup_file.open("r") as f:
-            cfg = json.safe_load(f)
+            cfg = json.load(f)
         #
 
         for dev_cfg in cfg["devices"]:

@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
-from enum import Enum, IntEnum
+from enum import Enum
 
 from .config_manager import ConfigManager
 from .device_registry import DeviceRegistry
@@ -268,8 +268,6 @@ class Watchdog:
         process health and finally heartbeat health.
         """
         
-        runtime_info = self.pm.status(device_info.name)
-
         #
         # The runtime file is the device's live state. If it is missing,
         # the process cannot be considered healthy.
@@ -393,10 +391,6 @@ class Watchdog:
         # Future:
         # cleanup stale files
         #
-    #
-
-    def runtime_is_valid(self, device_info):
-        return self.pm.status(device_info.name) is not None
     #
 
     def heartbeat_ok(self, runtime_info, watchdog_config):
