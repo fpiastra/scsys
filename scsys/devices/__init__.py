@@ -1,7 +1,7 @@
 from pathlib import Path
 import importlib
 import inspect
-from .base import (ScDevice, Measurement, MeasurementRecord)
+from .base import *
 
 DEVICE_CLASSES = {}
 

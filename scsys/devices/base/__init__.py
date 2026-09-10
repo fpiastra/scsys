@@ -1,1 +1,1 @@
-from .scdevice import (ScDevice, Measurement, MeasurementRecord)
+from .scdevice import (ScDevice, Measurement, MeasurementRecord, RuntimeConfig)
