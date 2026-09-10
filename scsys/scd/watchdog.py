@@ -13,7 +13,6 @@ from .device_registry import DeviceRegistry
 from .devs_state import DevsState
 from .process_manager import ProcessManager
 from .lock import LockManager
-from ..devices import discover_devices
 from ..alarms.alarm_base import (AlarmSeverity, AlarmEvent, AlarmEventType)
 from ..alarms.alarm_client import (AlarmClient, AlarmClientConfig)
 
@@ -39,10 +38,20 @@ class WatchdogAlarmType(Enum):
 
     def __str__(self):
         return self.value
+    #
+#
 
 @dataclass
 class WatchdogAlarmState:
     active: bool = False
+#
+@dataclass
+class WatchdogConfig:
+    autostart: bool
+    cycle_time_interval: float
+    startup_timeout: float
+    heartbeat_timeout: float
+    restart_on_failure: bool
 
 class Watchdog:
 
@@ -54,11 +63,16 @@ class Watchdog:
         self.runtime_dir = Path(cfgman.config.runtime_dir)
         self.lock_path = self.runtime_dir / "locks" / "watchdog.lock"
         self.socket_path = self.runtime_dir / "sockets" / "watchdog.sock"
+        self.setup_file = Path(cfgman.config.setup_file)
 
-        self.config = cfgman.config.watchdog
+        cfg = cfgman.config.watchdog
 
-        discover_devices(
-            cfgman.config.devs_defs_dir
+        self.config = WatchdogConfig(
+            autostart = cfg.get("autostart", True),
+            cycle_time_interval = cfg.get("cycle_time_interval", 10),
+            startup_timeout = cfg.get("startup_timeout", 5),
+            heartbeat_timeout = cfg.get("heartbeat_timeout", 30),
+            restart_on_failure = cfg.get("restart_on_failure", False)
         )
 
         self.lock = LockManager(
@@ -66,7 +80,7 @@ class Watchdog:
         )
 
         self.registry = DeviceRegistry(
-            self.config.setup_file
+            self.setup_file
         )
 
         self.pm = ProcessManager(
@@ -74,7 +88,7 @@ class Watchdog:
         )
 
         self.devs_state = DevsState(
-            Path(self.config.runtime_dir)
+            Path(self.runtime_dir)
         )
 
         self.running = False
@@ -82,6 +96,7 @@ class Watchdog:
         self.alarm_client = AlarmClient(
             AlarmClientConfig(runtime_dir=self.runtime_dir)
         )
+
         self.alarm_states:dict[str,dict[WatchdogAlarmType,WatchdogAlarmState]] = {}
 
         #
@@ -90,7 +105,47 @@ class Watchdog:
         self.server = None
     #
 
+    def watchdog_config_for(self, device_info, runtime_info):
+        """
+        Build the effective watchdog configuration for one device.
+
+        Precedence is:
+
+            1) global watchdog config
+            2) device watchdog config from setup.json
+            3) watchdog config from the runtime JSON
+
+        The runtime configuration is deliberately the final authority because operational commands may change watchdog behaviour without modifying setup.json.
+        """
+
+        cfg = {
+            "enabled": True,
+            "heartbeat_timeout": self.config.heartbeat_timeout,
+            "restart_on_failure": self.config.restart_on_failure,
+            "startup_timeout": self.config.startup_timeout,
+        }
+
+        #
+        # Static per-device override from setup.json.
+        #
+        cfg.update(device_info.watchdog_config or {})
+
+        #
+        # Runtime override is authoritative when a runtime file exists.
+        #
+        if runtime_info is not None:
+            runtime_wdg = runtime_info.get("watchdog", {})
+            if isinstance(runtime_wdg, dict):
+                cfg.update(runtime_wdg)
+
+        return cfg
+
+
     def run(self):
+        """
+        Acquire exclusive Watchdog ownership, load the configured device
+        universe, and start supervision.
+        """
 
         self.lock.acquire()
 
@@ -117,17 +172,28 @@ class Watchdog:
     #
 
     def event_loop(self):
-        while self.running:
-            self.check_devices()
+        """
+        Periodically supervise all configured devices.
 
+        The socket server will later be integrated into this loop. For now,
+        sleeping between supervision cycles avoids consuming a CPU core.
+        """
+
+        next_check = time.monotonic()
+
+        while self.running:
+            now = time.monotonic()
             #
             # Future:
             # poll watchdog socket
             #
-
-            time.sleep(
-                self.config.heartbeat_interval
-            )
+            if now >= next_check:
+                self.check_devices()
+                next_check = (
+                    now + self.config.cycle_time_interval
+                )
+            #
+            time.sleep(0.1) #TODO: Remove this once the Watchdog socket is implementeed
         #
     #
 
@@ -138,14 +204,48 @@ class Watchdog:
     #
 
     def check_device(self, device_info):
+        """
+        Check one configured device.
+
+        setup.json defines which devices exist. The runtime JSON, when present, supplies the authoritative runtime state and watchdog overrides.
+        Runtime files belonging to unknown devices are therefore never examined.
+        """
+
+        #
+        # Read the runtime state. This may be None when the device has not
+        # produced a runtime file yet.
+        #
+        runtime_info = self.pm.status(device_info.name)
+
+        #
+        # Build the effective watchdog configuration.
+        #
+        wdg = self.watchdog_config_for(
+            device_info=device_info,
+            runtime_info=runtime_info
+        )
+
+        #
+        # A runtime command may disable watchdog supervision completely.
+        #
+        if not wdg.get("enabled", True):
+            return
+        #
 
         state = self.devs_state.get(device_info.name)
 
         if state == DevsState.RUNNING:
-            self.check_running(device_info)
+            self.check_running(
+                device_info=device_info,
+                runtime_info=runtime_info,
+                watchdog_config=wdg
+            )
 
         elif state == DevsState.STOPPED:
-            self.check_stopped(device_info)
+            self.check_stopped(
+                device_info=device_info,
+                watchdog_config=wdg
+            )
 
         else:
             print(
@@ -155,12 +255,24 @@ class Watchdog:
         #
     #
 
-    def check_running(self, device_info):
+    def check_running(
+            self,
+            device_info,
+            runtime_info,
+            watchdog_config
+    ):
+        """
+        Check a device that is expected to be running.
+
+        The checks are deliberately ordered from basic runtime integrity to
+        process health and finally heartbeat health.
+        """
         
         runtime_info = self.pm.status(device_info.name)
 
         #
-        # No runtime info (or file).
+        # The runtime file is the device's live state. If it is missing,
+        # the process cannot be considered healthy.
         #
         if runtime_info is None:
             self._emit_alarm(
@@ -188,7 +300,7 @@ class Watchdog:
         #
 
         #
-        # Runtime file exists but process does not.
+        # Runtime file exists, but the process itself is gone.
         #
         if not self.pm.is_running(device_info.name):
             self._emit_alarm(
@@ -215,6 +327,9 @@ class Watchdog:
             )
         #
 
+        #
+        # Finally check that the device process is still communicating.
+        #
         if not self.heartbeat_ok(runtime_info=runtime_info):
             self._emit_alarm(
                 device=device_info.name,
@@ -242,11 +357,17 @@ class Watchdog:
     #
 
     def check_stopped(self, device_info):
+        """
+        Check a device that is expected to be stopped.
+
+        A running process in this state is an unexpected condition and is
+        stopped by the Watchdog.
+        """
 
         if self.pm.is_running(device_info.name):
             self._emit_alarm(
                 device=device_info.name,
-                alarm=WatchdogAlarmType.PROCESS_DEAD,
+                alarm=WatchdogAlarmType.UNEXPECTED_RUNNING,
                 severity=AlarmSeverity.WARNING,
                 message=f'Process running (unexpected).',
                 active=True
@@ -262,7 +383,7 @@ class Watchdog:
         else:
             self._emit_alarm(
                 device=device_info.name,
-                alarm=WatchdogAlarmType.PROCESS_DEAD,
+                alarm=WatchdogAlarmType.UNEXPECTED_RUNNING,
                 severity=AlarmSeverity.INFO,
                 message=f'Process has stopped (ok).',
                 active=False
@@ -278,16 +399,30 @@ class Watchdog:
         return self.pm.status(device_info.name) is not None
     #
 
-    def heartbeat_ok(self, runtime_info):
+    def heartbeat_ok(self, runtime_info, watchdog_config):
         hb = runtime_info.get("heartbeat")
+
         if hb is None:
             return False
-        
-        hb = datetime.fromisoformat(hb)
 
-        age = (datetime.now() - hb).total_seconds()
+        try:
+            hb = datetime.fromisoformat(hb)
 
-        return age <= 2 * self.config.heartbeat_interval
+            # Runtime timestamps are currently expected to be local/naive
+            # datetimes. Keep this consistent with the existing runtime format.
+            
+            age = (datetime.now() - hb).total_seconds()
+        except (TypeError, ValueError):
+            return False
+        #
+
+        timeout = watchdog_config.get(
+            "heartbeat_timeout",
+            self.config.heartbeat_timeout
+        )
+
+
+        return age <= timeout
     #
 
     def _emit_alarm(
