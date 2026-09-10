@@ -28,13 +28,18 @@ class MeasurementRecord:
 
 @dataclass
 class RuntimeConfig:
-    polling_interval: float = 5.0
-    variables_map: dict = field(
-        default_factory=dict
-    )
-    storage: dict = field(
-        default_factory=dict
-    )
+    polling_interval: float
+    variables_map: dict
+    storage: dict
+
+    @classmethod
+    def from_dict(cls, runtime_cfg:dict) -> "RuntimeConfig":
+        return cls(
+            polling_interval=runtime_cfg.get("polling_interval", 5),
+            variables_map=runtime_cfg.get("variables_map", {}),
+            storage=runtime_cfg.get("storage", {})
+        )
+    #
 #
 
 class ScDevice:
@@ -47,6 +52,7 @@ class ScDevice:
 
         self.cfg = cfg
         self.name = cfg.name
+        self.runtime_cfg = RuntimeConfig.from_dict(cfg.runtime_config)
         self.device_cfg = cfg.device_config
         self.runtime_dir = Path(runtime_dir)
         self.measurements = {}
