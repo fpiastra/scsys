@@ -2,19 +2,16 @@ from dataclasses import dataclass
 
 @dataclass
 class DeviceInfo:
-
     name: str
-
     type_name: str
-
     device_class: type
-
     enabled: bool
-
     autostart: bool
 
     device_config: dict
-
+    runtime_config: dict
+    watchdog_config: dict
+    
     process_name: str
 
     def create_device(self, runtime_dir:str):
