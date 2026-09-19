@@ -106,7 +106,7 @@ class AlarmDaemon:
 
         
     def _handle_request(self, request):
-        request_type = request.get("command")
+        request_type = request.get("msg_type")
         if request_type is None:
             #Probably I shall raise here, because this is a protocol error
             return {
