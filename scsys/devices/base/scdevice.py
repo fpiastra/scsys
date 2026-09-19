@@ -244,7 +244,8 @@ class ScDevice:
     #
 
     def _publish_measurements(self):
-        for varname, meas in self.measurements:
+        for varname, meas in self.measurements.items():
+            
             if not meas.valid:
                 continue
 
