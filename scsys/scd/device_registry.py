@@ -1,8 +1,12 @@
 from pathlib import Path
 import json
 from dataclasses import dataclass
-from ..devices import (get_device_class, DeviceInfo, RuntimeConfig)
 
+from ..devices import (get_device_class,
+                       #DeviceInfo, #In the future this should go to the devices submodude (somewhere)
+                       )
+
+from .device_info import DeviceInfo
 
 class DeviceRegistry:
     def __init__(self, setup:dict):
