@@ -8,6 +8,7 @@ import yaml
 
 from ..devices import discover_devices
 
+
 DEFAULT_RUNTIME_DIR = Path("/run/scsys")
 
 

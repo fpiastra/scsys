@@ -22,22 +22,18 @@ class SlowControlDaemon:
 
         self.config = cfgmgr.load()
 
-        self.runtime_dir = self.config.runtime_dir
+        self.runtime_dir = Path(self.config.runtime_dir)
 
-        discover_devices(
-            self.config.devices_dir
-        )
-        
-        self.socket_path = self.config.socket_path
+        self.socket_path = self.runtime_dir / 'sockets' / 'scd.sock'
 
-        self.lock_path = self.config.lock_path
+        self.lock_path = self.runtime_dir / 'locks' / 'scd.lock'
 
         self.lock = LockManager(
-            self.config.lock_path
+            lock_path=self.config.lock_path
         )
 
         self.registry = DeviceRegistry(
-            self.config.setup_file
+            setup_file=self.config.setup_file
         )
 
         self.pm = ProcessManager(
@@ -45,7 +41,7 @@ class SlowControlDaemon:
         )
 
         self.devs_state = DevsState(
-            self.runtime_dir
+            runtime_dir=self.runtime_dir
         )
 
         self.running = False

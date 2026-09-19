@@ -14,7 +14,7 @@ class AlarmNotificationManager:
         self.notifiers: list[AlarmNotifier] = []
 
     def add_notifier(self, notifier:AlarmNotifier)  -> None:
-        self.notifiers.append(AlarmNotifier())
+        self.notifiers.append(notifier)
 
     def notify(self, event: AlarmEvent)  -> None:
         for notifier in self.notifiers:

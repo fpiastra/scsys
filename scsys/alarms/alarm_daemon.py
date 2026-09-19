@@ -18,7 +18,7 @@ class AlarmDaemon:
 
         self.runtime_dir = Path(config.runtime_dir)
         self.lock = LockManager(
-            self.runtime_dir / 'alarmd.lock'
+            self.runtime_dir / "locks" / "alarmd.lock"
         )
 
         self.socket_path = self.runtime_dir / 'sockets' / 'alarmd.sock'

@@ -115,9 +115,12 @@ def discover_directory(search_dir:str, builtin:bool):
     #
 #
 
-def get_device_class(device_type:str):
+def get_devices_defs():
     global DEVICE_CLASSES
-    return DEVICE_CLASSES.get(
+    return DEVICE_CLASSES
+
+def get_device_class(device_type:str):
+    return get_devices_defs().get(
         device_type
     )
 #
