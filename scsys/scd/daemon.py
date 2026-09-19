@@ -29,7 +29,7 @@ class SlowControlDaemon:
         self.lock_path = self.runtime_dir / 'locks' / 'scd.lock'
 
         self.lock = LockManager(
-            lock_path=self.config.lock_path
+            lock_path=self.lock_path
         )
 
         self.registry = DeviceRegistry(
@@ -37,7 +37,8 @@ class SlowControlDaemon:
         )
 
         self.pm = ProcessManager(
-            runtime_dir=self.config.runtime_dir
+            runtime_dir=self.runtime_dir,
+            cfg=self.config.procman
         )
 
         self.devs_state = DevsState(

@@ -129,11 +129,11 @@ class ConfigManager:
             # validating their own sections.
             #
             procman=cfg.get(
-                "watchdog",
+                "procman",
                 {}
             ),
             watchdog=cfg.get(
-                "procman",
+                "watchdog",
                 {}
             ),
             alarmd=cfg.get(
