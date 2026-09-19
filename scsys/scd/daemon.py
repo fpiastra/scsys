@@ -33,7 +33,7 @@ class SlowControlDaemon:
         )
 
         self.registry = DeviceRegistry(
-            setup_file=self.config.setup_file
+            setup=cfgmgr.setup
         )
 
         self.pm = ProcessManager(

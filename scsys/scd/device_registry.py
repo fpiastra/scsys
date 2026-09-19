@@ -5,20 +5,16 @@ from ..devices import (get_device_class, DeviceInfo, RuntimeConfig)
 
 
 class DeviceRegistry:
-    def __init__(self, setup_file):
+    def __init__(self, setup:dict):
 
-        self.setup_file = Path(setup_file)
+        self.setup = setup
         self.devices = {}
     #
         
     def load(self):
         self.devices.clear()
         
-        with self.setup_file.open("r") as f:
-            cfg = json.load(f)
-        #
-
-        for dev_cfg in cfg["devices"]:
+        for dev_cfg in self.setup["devices"]:
 
             name = dev_cfg["name"]
             if not name:

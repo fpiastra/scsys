@@ -79,7 +79,7 @@ class Watchdog:
         )
 
         self.registry = DeviceRegistry(
-            self.setup_file
+            setup=cfgman.setup
         )
 
         self.pm = ProcessManager(
