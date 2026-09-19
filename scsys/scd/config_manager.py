@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 import yaml
 
+from ..devices import discover_devices
 
 DEFAULT_RUNTIME_DIR = Path("/run/scsys")
 
@@ -23,9 +24,11 @@ class ScdConfig:
 
     runtime_dir: Path
 
-    devs_defs_dir: Path|None = None #The path were there are the definitions of the devices
-
     log_level: str = "INFO"
+
+    procman: dict = field(
+        default_factory=dict
+    )
 
     watchdog: dict = field(
         default_factory=dict
@@ -88,24 +91,26 @@ class ConfigManager:
         #
         # Runtime directory precedence:
         #
-        #   1. SCSYS_RUNTIME_DIR environment variable
-        #   2. runtime_dir in configuration
+        #   1. runtime_dir in configuration
+        #   2. SCSYS_RUNTIME_DIR environment variable
         #   3. DEFAULT_RUNTIME_DIR
         #
         runtime_dir = Path(
-            os.environ.get(
-                "SCSYS_RUNTIME_DIR",
-                cfg.get(
-                    "runtime_dir",
+            cfg.get(
+                "runtime_dir",
+                os.environ.get(
+                    "SCSYS_RUNTIME_DIR",
                     DEFAULT_RUNTIME_DIR
                 )
             )
         ).expanduser().resolve()
 
-        devs_defs_dir = cfg.get("devs_dir")
-        if not devs_defs_dir is None:
-            devs_defs_dir = Path(devs_defs_dir).expanduser().resolve()
-        #
+        discover_devices(
+            cfg.get(
+                "devs_dir",
+                os.environ.get("SCSYS_DEVS_DIR")
+            )
+        )
 
         #
         # Build the common configuration object.
@@ -113,7 +118,6 @@ class ConfigManager:
         self.config = ScdConfig(
             setup_file=setup_file,
             runtime_dir=runtime_dir,
-            devs_defs_dir=devs_defs_dir,
             log_level=cfg.get(
                 "log_level",
                 "INFO"
@@ -123,8 +127,12 @@ class ConfigManager:
             # The Watchdog and AlarmDaemon are responsible for
             # validating their own sections.
             #
-            watchdog=cfg.get(
+            procman=cfg.get(
                 "watchdog",
+                {}
+            ),
+            watchdog=cfg.get(
+                "procman",
                 {}
             ),
             alarmd=cfg.get(

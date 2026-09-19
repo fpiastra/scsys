@@ -69,8 +69,7 @@ class Watchdog:
 
         self.config = WatchdogConfig(
             autostart = cfg.get("autostart", True),
-            cycle_time_interval = cfg.get("cycle_time_interval", 10),
-            startup_timeout = cfg.get("startup_timeout", 5),
+            cycle_time_interval = cfg.get("cycle_time_interval", 10)
             heartbeat_timeout = cfg.get("heartbeat_timeout", 30),
             restart_on_failure = cfg.get("restart_on_failure", False)
         )
@@ -84,7 +83,8 @@ class Watchdog:
         )
 
         self.pm = ProcessManager(
-            runtime_dir=self.runtime_dir
+            runtime_dir=self.runtime_dir,
+            cfg=cfgman.config.procman
         )
 
         self.devs_state = DevsState(
@@ -121,8 +121,7 @@ class Watchdog:
         cfg = {
             "enabled": True,
             "heartbeat_timeout": self.config.heartbeat_timeout,
-            "restart_on_failure": self.config.restart_on_failure,
-            "startup_timeout": self.config.startup_timeout,
+            "restart_on_failure": self.config.restart_on_failure
         }
 
         #

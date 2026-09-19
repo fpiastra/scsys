@@ -24,8 +24,19 @@ class LaunchInfo:
 
 class ProcessManager:
 
-    def __init__(self, runtime_dir: Path):
+    def __init__(self, runtime_dir: Path, cfg: dict={}):
         self.runtime_dir = Path(runtime_dir)
+        self.cfg = cfg
+        #The time to wait before an instanced device process becomes alive
+        self.startup_timeout = cfg.get(
+            "startup_timeout",
+            5.0 #The default value
+        )
+        #The time to sleep at the end of process polling loop to check the status of a process that is being started
+        self.proc_poll_sleep = cfg.get(
+            "proc_poll_sleep",
+            0.1 #The default value
+        )
     #
 
     def start(self, device_info: DeviceInfo):
@@ -53,23 +64,6 @@ class ProcessManager:
             exist_ok=True
         )
 
-        runtime_info = {
-            "name": device_info.name,
-            "type": device_info.type_name,
-            "config": device_info.device_config,
-            "pid": None,
-            "process_started": None,
-            "heartbeat": None
-        }
-
-        with self.runtime_file(device_info.name).open("w") as f:
-            json.dump(
-                runtime_info,
-                f,
-                indent=4
-            )
-        #
-
         device = device_info.create_device(
             runtime_dir=self.runtime_dir
         )
@@ -78,6 +72,24 @@ class ProcessManager:
             pickle.dump(
                 LaunchInfo(device=device),
                 f
+            )
+        #
+
+        runtime_info = {
+                    "name": device_info.name,
+                    "type": device_info.type_name,
+                    "runtime_config": device_info.runtime_config,
+                    "startup": datetime.now().isoformat(),
+                    "pid": None,
+                    "process_started": None,
+                    "heartbeat": None
+                }
+        
+        with self.runtime_file(device_info.name).open("w") as f:
+            json.dump(
+                runtime_info,
+                f,
+                indent=4
             )
         #
 
@@ -100,10 +112,11 @@ class ProcessManager:
         #
 
         #
-        # Wait up to 5 seconds for the device to start.
-        #
-        timeout = 5.0
-        poll_interval = 0.1
+        
+        startup_timeout = device_info.runtime_config.get(
+            "startup_timeout",
+            self.startup_timeout
+        )
 
         t0 = time.monotonic()
 
@@ -143,10 +156,10 @@ class ProcessManager:
                 self.launch_file(device_info.name).unlink(missing_ok=True)
                 return True
 
-            if time.monotonic() - t0 >= timeout:
+            if time.monotonic() - t0 >= startup_timeout:
                 print(
                     f'Process for device "{device_info.name}" '
-                    f'failed to start within {timeout} s.'
+                    f'failed to start within {startup_timeout} s.'
                 )
                 
                 if proc.poll() is None:
@@ -157,7 +170,7 @@ class ProcessManager:
                 self.runtime_file(device_info.name).unlink(missing_ok=True)
                 return False
 
-            time.sleep(poll_interval)
+            time.sleep(self.proc_poll_sleep)
         #
     #
 
