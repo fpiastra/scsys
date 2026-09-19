@@ -32,7 +32,7 @@ class InvalidValuePolicy(Enum):
 class AlarmRule:
     """Base class for all alarm rules related devices measurements."""
     name: str
-    variable: str
+    var_name: str
     operator: ComparisonOperator
     threshold: float
     severity: AlarmSeverity
@@ -58,7 +58,7 @@ class AlarmRule:
         
         return cls(
             name=cfg["name"],
-            variable=cfg["variable"],
+            var_name=cfg["var_name"],
             operator=ComparisonOperator(cfg["operator"]),
             threshold=cfg["threshold"],
             severity=AlarmSeverity[cfg["severity"].upper()],
