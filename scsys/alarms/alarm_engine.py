@@ -65,19 +65,17 @@ class AlarmEngine:
                             name=rule.name,
                             severity=rule.severity,
                             active=False,
-                            message=f"Suppressed because measurement '{meas.name}' is invalid.",
+                            message=f"Suppressed because measurement '{rule.var_name}' is invalid.",
                             timestamp=now,
                             evtype=AlarmEventType.SUPPRESSED,
                         )
                     )
+                #
 
                 #
                 # Optionally raise invalid-measurement alarm
                 #
-                if (
-                    rule.invalid_policy == InvalidValuePolicy.ALARM
-                    and not invalid_state.active
-                ):
+                if (rule.invalid_policy == InvalidValuePolicy.ALARM) and (not invalid_state.active):
 
                     invalid_state.active = True
 
@@ -87,11 +85,12 @@ class AlarmEngine:
                             name=invalid_name,
                             severity=rule.severity,
                             active=True,
-                            message=f"Device {self.dev_name}: measurement '{meas.name}' is invalid.",
+                            message=f"Device {self.dev_name}: measurement '{rule.var_name}' is invalid.",
                             timestamp=now,
                             evtype=AlarmEventType.ACTIVATED,
                         )
                     )
+                #
 
                 continue
 
@@ -112,10 +111,11 @@ class AlarmEngine:
                         name=invalid_name,
                         severity=rule.severity,
                         active=False,
-                        message=f"Device {self.dev_name}: measurement '{meas.name}' is valid again.",
+                        message=f"Device {self.dev_name}: measurement '{rule.var_name}' is valid again.",
                         timestamp=now
                     )
                 )
+            #
 
             #
             # Evaluate threshold rule
@@ -144,7 +144,7 @@ class AlarmEngine:
                         active=True,
                         message=(
                             f"Device {self.dev_name}: "
-                            f"{meas.name}={meas.value} "
+                            f"{rule.var_name}={meas.value} "
                             f"violates rule "
                             f"{rule.operator}{rule.threshold}"
                         ),
@@ -152,6 +152,7 @@ class AlarmEngine:
                         evtype=evtype,
                     )
                 )
+            #
 
             elif rule_state.active:
 
@@ -165,17 +166,17 @@ class AlarmEngine:
                         active=False,
                         message=(
                             f"Device {self.dev_name}: "
-                            f"{meas.name}={meas.value} "
+                            f"{rule.var_name}={meas.value} "
                             f"returned in range."
                         ),
                         timestamp=now,
                     )
                 )
+            #
+        #End of the loop over the rules
 
         return events
     #
-        
-        
 
 
     def _compare(
