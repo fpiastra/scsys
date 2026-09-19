@@ -329,7 +329,7 @@ class ScDevice:
     #
 
     def _setup_alarm_engine(self):
-        self.alarm_engine = AlarmEngine(dev_name=self.name, rules=self.get("alarms", []))
+        self.alarm_engine = AlarmEngine(dev_name=self.name, rules=self.device_cfg.get("alarms", []))
 
     def _setup_alarm_client(self):
         self.alarm_client = AlarmClient(
