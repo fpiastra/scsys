@@ -69,7 +69,7 @@ class Watchdog:
 
         self.config = WatchdogConfig(
             autostart = cfg.get("autostart", True),
-            cycle_time_interval = cfg.get("cycle_time_interval", 10)
+            cycle_time_interval = cfg.get("cycle_time_interval", 10),
             heartbeat_timeout = cfg.get("heartbeat_timeout", 30),
             restart_on_failure = cfg.get("restart_on_failure", False)
         )
