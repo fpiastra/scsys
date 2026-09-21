@@ -2,6 +2,7 @@ from dataclasses import (dataclass, asdict)
 from pathlib import Path
 import socket
 import json
+from typing import Any
 
 from .alarm_base import (AlarmEvent)
 
