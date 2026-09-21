@@ -19,7 +19,7 @@ class AlarmClient:
         self.socket_path = self.cfg.runtime_dir / 'sockets' / 'alarmd.sock'
     #
 
-    def send_event(self, event:AlarmEvent) -> bool:
+    def send_event(self, event:AlarmEvent) -> dict[str, Any]:
         return self._send_message(
             "event",
             asdict(event)
@@ -57,18 +57,32 @@ class AlarmClient:
         payload: dict | None = None
     ):
         if payload is None:
-            return {"command": msg_type}
+            return {"msg_type": msg_type}
         #
         return {
-            "type": msg_type,
+            "msg_type": msg_type,
             "payload": payload
         }
 
-    def _parse_reply(self, reply: bytes):
+    def _parse_reply(self, reply: bytes|None):
         if not reply:
             raise RuntimeError("Connection closed by alarmd.")
 
-        if not "success" in reply:
-            raise RuntimeError(f"Malformed reply from alarmd (\n    {str(reply)}\n)")
+        # Make a dictionary from a json string
+        try:
+            text = reply.decode("utf-8")
+            reply_dict = json.loads(text)
+        except (UnicodeDecodeError, json.JSONDecodeError) as err:
+            raise RuntimeError(f"Invalid JSON reply from alarmd:\n    {reply!r}"
+            ) from err
+
+        if not isinstance(reply_dict, dict):
+            raise RuntimeError(
+                "Malformed reply from alarmd: expected a JSON object."
+            )
+
+        if not "success" in reply_dict:
+            raise RuntimeError(f"Malformed reply from alarmd:\n    {text})"
+            )
         
-        return json.loads(reply.decode('utf-8'))
+        return reply_dict
