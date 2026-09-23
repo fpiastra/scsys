@@ -98,7 +98,7 @@ class ProcessManager:
                 [
                     sys.executable,
                     "-m",
-                    "scsys.device_runner",
+                    "scsys.scd.device_runner",
                     str(self.launch_file(device_info.name))
                 ],
                 start_new_session=True,

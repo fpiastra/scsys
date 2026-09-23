@@ -5,7 +5,7 @@ from pathlib import Path
 import pickle
 
 from ..devices import get_device_class
-from .process_manager import DeviceInfo
+from .device_info import DeviceInfo
 
 def main():
 
