@@ -71,12 +71,12 @@ class ScDevice:
         
         proc = psutil.Process(os.getpid())
 
-        self._update_runtime_info(
-            pid=proc.pid,
-            process_started=proc.create_time()
-        )
-
-        self.initialize()
+        try:
+            self.initialize()
+        except Exception as err:
+            print(f'Initialization of device "{self.name}" failed: {err}')
+            self.cleanup()
+            raise
         
         signal.signal(
             signal.SIGTERM,
@@ -86,6 +86,11 @@ class ScDevice:
         signal.signal(
             signal.SIGINT,
             self._sigterm_handler
+        )
+
+        self._update_runtime_info(
+            pid=proc.pid,
+            process_started=proc.create_time()
         )
         
         self.running = True
@@ -108,6 +113,7 @@ class ScDevice:
             #
         finally:
             self.cleanup()
+        #
     #
 
     def initialize(self):
@@ -245,7 +251,7 @@ class ScDevice:
 
     def _publish_measurements(self):
         for varname, meas in self.measurements.items():
-            
+
             if not meas.valid:
                 continue
 
