@@ -2,6 +2,8 @@ from .base import (ScDevice, Measurement)
 from datetime import datetime
 from random import random
 
+from scd.device_info import DeviceInfo
+
 class DummyDevice(ScDevice):
 
     DEVICE_TYPE = "dummy"
@@ -11,8 +13,8 @@ class DummyDevice(ScDevice):
         "setpoint"
     )
 
-    def __init__(self, name, config_file, runtime_dir):
-        super().__init__(name, config_file, runtime_dir)
+    def __init__(self, cfg:DeviceInfo, runtime_dir:str):
+        super().__init__(cfg, runtime_dir)
 
         self.internal_setpoint = 0.0
         ts = datetime.now()
