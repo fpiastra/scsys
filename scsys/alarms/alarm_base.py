@@ -63,7 +63,7 @@ class AlarmRule:
             threshold=cfg["threshold"],
             severity=AlarmSeverity[cfg["severity"].upper()],
             enabled=cfg.get("enabled", True),
-            alarm_on_invalid=cfg.get("alarm_on_invalid", True),
+            invalid_policy=InvalidValuePolicy[cfg.get("invalid_policy", "ALARM").upper()]
         )
 
 class AlarmEventType(Enum):
