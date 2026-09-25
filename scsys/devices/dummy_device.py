@@ -1,4 +1,4 @@
-from .base import (ScDevice, Measurement)
+from .base import ScDevice
 from datetime import datetime
 from random import random
 
