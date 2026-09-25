@@ -294,9 +294,7 @@ class ConfigManager:
             "enabled",
             "autostart",
             "runtime",
-            "config",
-            "watchdog",
-            "alarms",
+            "config"
         )
 
         device_names = set()
