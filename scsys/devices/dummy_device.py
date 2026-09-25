@@ -2,7 +2,7 @@ from .base import (ScDevice, Measurement)
 from datetime import datetime
 from random import random
 
-from scd.device_info import DeviceInfo
+from ..scd.device_info import DeviceInfo
 
 class DummyDevice(ScDevice):
 
