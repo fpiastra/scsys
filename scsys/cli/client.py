@@ -3,7 +3,8 @@ from pathlib import Path
 import socket
 import json
 
-DEFAULT_RUNTIME_DIR = Path(f"{os.environ.get("HOME")}/local/scsys/run")
+HOME_DIR = str(os.environ.get("HOME"))
+DEFAULT_RUNTIME_DIR = Path(f"{HOME_DIR}/local/scsys/run")
 
 RUNTIME_DIR = Path(
     os.environ.get(
