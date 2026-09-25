@@ -3,7 +3,7 @@ from pathlib import Path
 import socket
 import json
 
-DEFAULT_RUNTIME_DIR = Path("/run/scsys")
+DEFAULT_RUNTIME_DIR = Path(f"{os.environ.get("HOME")}/local/scsys/run")
 
 RUNTIME_DIR = Path(
     os.environ.get(
@@ -12,7 +12,7 @@ RUNTIME_DIR = Path(
     )
 )
 
-SOCKET_PATH = RUNTIME_DIR / "scd.sock"
+SOCKET_PATH = RUNTIME_DIR / 'sockets' / 'scd.sock'
 
 def send(request:dict):
 
