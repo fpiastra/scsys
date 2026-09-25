@@ -14,33 +14,8 @@ from ...scd.device_info import DeviceInfo
 from ...alarms.alarm_engine import AlarmEngine
 from ...alarms.alarm_client import (AlarmClient, AlarmClientConfig)
 
-@dataclass
-class Measurement:
-    value: int | float | bool | None
-    timestamp: datetime | None
-    valid: bool = False #This indicates that the last readout failed and the fields above are outdated (the last good readout)
+from ...core import (RuntimeConfig, Measurement, MeasurementRecord)
 
-@dataclass
-class MeasurementRecord:
-    varname: str
-    value: int | float | bool
-    timestamp: datetime
-
-@dataclass
-class RuntimeConfig:
-    polling_interval: float
-    variables_map: dict
-    storage: dict
-
-    @classmethod
-    def from_dict(cls, runtime_cfg:dict) -> "RuntimeConfig":
-        return cls(
-            polling_interval=runtime_cfg.get("polling_interval", 5),
-            variables_map=runtime_cfg.get("variables_map", {}),
-            storage=runtime_cfg.get("storage", {})
-        )
-    #
-#
 
 class ScDevice:
 

@@ -5,7 +5,7 @@ from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from .base import ScStorage
-from ..devices import MeasurementRecord
+from ..core import MeasurementRecord
 
 def read_token(token_path):
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import time
 
 from .alarm_base import *
-from ..devices import Measurement
+from ..core import Measurement
 
 @dataclass
 class AlarmState:
