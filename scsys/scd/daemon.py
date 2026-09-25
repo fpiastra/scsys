@@ -342,7 +342,7 @@ class SlowControlDaemon:
 
         response = {
             "success": True,
-            "requested_state": self.devs_state.get(device)
+            "requested_state": self.devs_state.get(device),
             **runtime_info
         }
         
