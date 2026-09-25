@@ -76,14 +76,14 @@ class ProcessManager:
         #
 
         runtime_info = {
-                    "name": device_info.name,
-                    "type": device_info.type_name,
-                    "runtime_config": device_info.runtime_config,
-                    "startup": datetime.now().isoformat(),
-                    "pid": None,
-                    "process_started": None,
-                    "heartbeat": None
-                }
+            "name": device_info.name,
+            "type": device_info.type_name,
+            "runtime_config": device_info.runtime_config,
+            "startup": datetime.now().isoformat(),
+            "pid": None,
+            "process_started": None,
+            "heartbeat": None
+        }
         
         with self.runtime_file(device_info.name).open("w") as f:
             json.dump(
@@ -150,8 +150,6 @@ class ProcessManager:
                     f'{runtime_info.get("process_started")} '
                     f'with PID={runtime_info.get("pid")}.'
                 )
-
-                self.devices_infos[device_info.name] = device_info
 
                 self.launch_file(device_info.name).unlink(missing_ok=True)
                 return True
