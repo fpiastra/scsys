@@ -70,20 +70,40 @@ class ScDevice:
         
         self.running = True
 
+        last_polling = None
         try:
             while self.running:
+                now = time.monotonic()
+
                 self._update_runtime_info(heartbeat=datetime.now().isoformat())
 
                 self._poll_socket()
 
-                self.read_measurements()
+                if (last_polling is None) or (now - last_polling) >= self.runtime_cfg.polling_interval:
+                    self.read_measurements()
 
-                self._process_alarm_events()
+                    self._process_alarm_events()
 
-                self._publish_measurements()
+                    self._publish_measurements()
 
+                    if last_polling is None:
+                        last_polling = now
+                    else:
+                        last_polling += self.runtime_cfg.polling_interval
+                    #
+                #
+
+                if last_polling is None:
+                    remaining = 0.0
+                else:
+                    remaining = max(
+                        0.0,
+                        self.runtime_cfg.polling_interval - (now - last_polling)
+                    )
+                #
+                
                 time.sleep(
-                    self.runtime_cfg.polling_interval
+                    min(0.01, remaining) #Keep polling the the socket at higher rate
                 )
             #
             print(f"DEBUG: Device {self.name} exited the run loop.")
