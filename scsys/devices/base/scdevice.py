@@ -209,7 +209,7 @@ class ScDevice:
         )
     #
 
-    def _invalidate_measurement(
+    def invalidate_measurement(
         self,
         varname
     ):
@@ -247,15 +247,19 @@ class ScDevice:
     #
 
     def _process_alarm_events(self):
-
+        print(f'DEBUG: device "{self.name}" start evaluating alarm rules.')
         events = self.alarm_engine.evaluate(self.measurements)
+
+        print(f'DEBUG: device "{self.name}" found {len(events)} alarm event(s)')
 
         if not events:
             return
 
+        print(f'DEBUG: device "{self.name}" start sending the alarm events to the alarm daemon.')
         for event in events:
             reply = self.alarm_client.send_event(event)
             if not reply["success"]:
+                print(f'WARNING: device failed to send alarm "{event.name}": {reply["error"]}')
                 #logger.warning(f'Failed to send alarm {event.name}: {reply['error']}')
                 pass
 
@@ -383,7 +387,11 @@ class ScDevice:
         #
 
         try:
-            data = conn.recv(4096)
+            try:
+                data = conn.recv(4096)
+            except BlockingIOError:
+                return
+            #
             if not data:
                 return
             #
