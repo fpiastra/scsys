@@ -6,7 +6,7 @@ import time
 
 from .alarm_base import (AlarmEvent, AlarmEventType)
 from .alarm_storage import AlarmStorage
-from .alarm_notifier import AlarmNotifier
+from .notifiers.alarm_notifier import AlarmNotificationManager
 
 
 class AlarmState(Enum):
@@ -22,10 +22,10 @@ class ActiveAlarm:
     last_notification: float = None
 
 class AlarmManager:
-    def __init__(self):
+    def __init__(self, cfg:dict):
         self.active_alarms: dict[tuple[str, str], ActiveAlarm] = {}
 
-        self.notifier = AlarmNotifier()
+        self.notifman = AlarmNotificationManager(cfg.get("notifiers",[]))
         
         self.storage = AlarmStorage()
 
