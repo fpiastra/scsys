@@ -30,7 +30,7 @@ def send(request:dict):
         except FileNotFoundError:
             return {
                 "success": False,
-                "error": "mxlscd is not running"
+                "error": f'no scd server is not running on socket {str(SOCKET_PATH)}'
             }
 
         sock.sendall(payload.encode())
