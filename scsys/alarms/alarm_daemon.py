@@ -1,5 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass
+import argparse
+import time
 
 import socket
 import signal
@@ -23,7 +25,7 @@ class AlarmDaemon:
 
         self.socket_path = self.runtime_dir / 'sockets' / 'alarmd.sock'
         
-        self.alarm_manager = AlarmManager()
+        self.alarm_manager = AlarmManager(config.alarmd)
 
         self.server = None
         self.running = False
@@ -54,9 +56,9 @@ class AlarmDaemon:
     #
 
     def event_loop(self):
-
         while self.running:
             self._poll_socket()
+            time.sleep(0.01)
     #
 
     def _poll_socket(self):
@@ -68,7 +70,12 @@ class AlarmDaemon:
         #
         
         try:
-            data = conn.recv(4096)
+            try:
+                data = conn.recv(4096)
+            except BlockingIOError:
+                #There a client connected but has not yet sent data
+                return
+            #
             if not data:
                 return
             #
@@ -166,3 +173,45 @@ class AlarmDaemon:
         self.shutdown()
     #
 
+def main():
+
+    parser = argparse.ArgumentParser(
+        prog="scalarms",
+        description="Slow Control Alarms Daemon"
+    )
+
+    parser.add_argument(
+        "config_file",
+        help="Path to the daemon configuration file"
+    )
+
+    args = parser.parse_args()
+
+    daemon = None
+    fail = False
+
+    try:
+
+        daemon = AlarmDaemon(
+            args.config_file
+        )
+
+        daemon.run()
+
+    except KeyboardInterrupt:
+
+        print("Stopping daemon...")
+
+    except Exception as e:
+        print(f"ERROR: {e}")
+        fail = True
+
+    finally:
+        if daemon is not None:
+            daemon.cleanup()
+
+    return int(fail)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
