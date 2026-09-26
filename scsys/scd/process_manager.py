@@ -267,7 +267,19 @@ class ProcessManager:
                 print(f"ERROR: Socket of device '{name}' not found or connection was refused: {err}")
                 return False
             sock.sendall(payload.encode())
-        return True  
+            response = sock.recv(4096) #Adding thiss to let the device answer.
+        try:
+            ret = json.loads(response.decode())
+        except json.JSONDecodeError as err:
+            print(f'ERROR: Invalid JSON response from device "{name}": {err}.')
+            return False
+        except Exception as err:
+            print(f'ERROR: generic error in the response from device "{name}": {err}.')
+            return False
+        if not "success" in ret.keys():
+            print(f'ERROR: Invalid response protocol from device "{name}": expected the key "success".')
+            return False
+        return ret.get('success')  
     #
 
     def restart(self, device_info:DeviceInfo):
