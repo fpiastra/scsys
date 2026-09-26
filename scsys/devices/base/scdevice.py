@@ -86,7 +86,9 @@ class ScDevice:
                     self.runtime_cfg.polling_interval
                 )
             #
+            print(f"DEBUG: Device {self.name} exited the run loop.")
         finally:
+            print(f"DEBUG: Device {self.name} start cleanup process.")
             self.cleanup()
         #
     #
@@ -259,6 +261,7 @@ class ScDevice:
 
 
     def shutdown(self):
+        print(f"Device {self.name} shutting down")
         self.running = False
     #
 
@@ -274,6 +277,7 @@ class ScDevice:
         command = request.get(
             "command"
         )
+        print(f'DEBUG: Device {self.name} handling request command "{command}"')
 
         if command == "status":
             return {
@@ -283,7 +287,6 @@ class ScDevice:
         elif command == "get":
             return self.get( request["varname"] )
         elif command == "set":
-
             return self.set(
                 request["varname"],
                 request["value"]
@@ -293,6 +296,7 @@ class ScDevice:
             return {
                 "success": True
             }
+        print(f'ERROR: Device {self.name} unknown command "{command}"')
         return {
             "success": False,
             "message": f"Unknown command '{command}'"
@@ -371,12 +375,12 @@ class ScDevice:
     #
 
     def _poll_socket(self):
-
+        #print(f"DEBUG: Device {self.name} polling socket.")
         try:
             conn, _ = self.server.accept()
         except BlockingIOError:
-            #TODO: log a message of error
             return
+        #
 
         try:
             data = conn.recv(4096)
@@ -388,9 +392,10 @@ class ScDevice:
                     data.decode()
                 )
             except json.JSONDecodeError:
+                print(f'ERROR: Device "{self.name}" received invalid JSON request:\n    {data}')
                 response = {
                     "success": False,
-                    "message": f"Invalid JSON request:\n({request})"
+                    "message": f"Invalid JSON request:\n({data})"
                 }
             else:
                 try:
@@ -398,20 +403,27 @@ class ScDevice:
                         request
                     )
                 except Exception as err:
+                    print(f'DEBUG: Device "{self.name}" request error: {err}')
                     response = {
                         "success": False,
                         "message": f"Request error: {err}"
                     }
+                else:
+                    print(f'DEBUG: Device "{self.name}" request handled successfully.')
                 #
             #
+            print(f'DEBUG: Device "{self.name}" sending response.')
             conn.sendall(
                 json.dumps(response).encode()
             )
+        except BrokenPipeError:
+            print(f'WARNING: device "{self.name}": pipe broken or connection closed by the client before response was sent.')
         finally:
             conn.close()
     #
 
     def _cleanup_socket(self):
+        print(f'DEBUG: Device "{self.name}" cleaning up the communication socket.')
         if self.server is not None:
             self.server.close()
         #
