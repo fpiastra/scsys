@@ -17,7 +17,6 @@ class DummyDevice(ScDevice):
         super().__init__(cfg, runtime_dir)
 
         self.internal_setpoint = 0.0
-        ts = datetime.now()
 
         #The class must be fixed as 
         for var in self.VARIABLES:
@@ -76,9 +75,9 @@ class DummyDevice(ScDevice):
         #
         print(
             f"{self.name}: "
-            f"{varname} <- {value}"
+            f"Setting {varname} <- {value}"
         )
-        self.internal_setpoint = value #This is set only in this dummy class, but this should not happen in a real device. The measurement value must be changed only for the read_measurements function
+        self.internal_setpoint = float(value) #This is set only in this dummy class, but this should not happen in a real device. The measurement value must be changed only for the read_measurements function
         return True
     #
 
@@ -95,5 +94,8 @@ class DummyDevice(ScDevice):
             value     = self.internal_setpoint,
             timestamp = datetime.now()
         )
+        if float(self.internal_setpoint) < 0.0:
+            self.invalidate_measurement(varname = 'setpoint')
+        #
     #
 #

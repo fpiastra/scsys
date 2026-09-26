@@ -24,6 +24,10 @@ class ComparisonOperator(Enum):
     def __str__(self):
         return self.value
 
+class AlarmCondition(Enum):
+    VALUE = auto()
+    INVALID = auto()
+
 class InvalidValuePolicy(Enum):
     IGNORE = auto()
     ALARM = auto()
@@ -33,8 +37,9 @@ class AlarmRule:
     """Base class for all alarm rules related devices measurements."""
     name: str
     var_name: str
-    operator: ComparisonOperator
-    threshold: float
+    condition: AlarmCondition
+    operator: ComparisonOperator|None
+    threshold: float|None
     severity: AlarmSeverity
     enabled: bool = True
     invalid_policy: InvalidValuePolicy = InvalidValuePolicy.ALARM
@@ -45,8 +50,7 @@ class AlarmRule:
         required = (
             "name",
             "var_name",
-            "operator",
-            "threshold",
+            "condition",
             "severity",
         )
 
@@ -55,16 +59,42 @@ class AlarmRule:
                 raise RuntimeError(
                     f"Missing alarm configuration key '{key}'."
                 )
+            #
+        #
         
-        return cls(
-            name=cfg["name"],
-            var_name=cfg["var_name"],
-            operator=ComparisonOperator(cfg["operator"]),
-            threshold=cfg["threshold"],
-            severity=AlarmSeverity[cfg["severity"].upper()],
-            enabled=cfg.get("enabled", True),
-            invalid_policy=InvalidValuePolicy[cfg.get("invalid_policy", "ALARM").upper()]
-        )
+        condition = AlarmCondition[cfg.get("condition").upper()]
+
+        if condition == AlarmCondition.INVALID:
+            return cls(
+                name=cfg["name"],
+                var_name=cfg["var_name"],
+                condition=condition,
+                operator=None,
+                threshold=None,
+                severity=AlarmSeverity[cfg["severity"].upper()],
+                enabled=cfg.get("enabled", True)
+            )
+        elif condition == AlarmCondition.VALUE:
+            if "operator" not in cfg:
+                raise RuntimeError(
+                    "Missing alarm configuration key 'operator' "
+                    "for VALUE alarm."
+                )
+            if "threshold" not in cfg:
+                raise RuntimeError(
+                    "Missing alarm configuration key 'threshold' "
+                    "for VALUE alarm."
+                )
+            return cls(
+                name=cfg["name"],
+                var_name=cfg["var_name"],
+                condition=condition,
+                operator=ComparisonOperator(cfg["operator"]),
+                threshold=float(cfg["threshold"]),
+                severity=AlarmSeverity[cfg["severity"].upper()],
+                enabled=cfg.get("enabled", True),
+                invalid_policy=InvalidValuePolicy[cfg.get("invalid_policy", "ALARM").upper()]
+            )
 
 class AlarmEventType(Enum):
     ACTIVATED = auto()

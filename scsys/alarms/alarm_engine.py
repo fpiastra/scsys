@@ -27,18 +27,22 @@ class AlarmEngine:
         now = time.time()
 
         for rule in self.rules:
-
+            print(f'DEBUG: evaluating alarm rule "{rule.name}":')
             if not rule.enabled:
+                print(f'DEBUG:    "{rule.name}" not enabled')
                 continue
 
             meas = measurements.get(rule.var_name)
             if meas is None:
+                print(f'DEBUG:    measurement "{rule.var_name}" required by the rule does not exist')
                 continue
 
+            #This is created anyhow although it can becomes active only when the alarm condition is VALUE
             rule_state = self.states.setdefault(
                 rule.name,
                 AlarmState()
             )
+            
 
             invalid_name = f"{rule.name}:invalid"
 
@@ -55,7 +59,7 @@ class AlarmEngine:
                 #
                 # Suppress threshold alarm if active
                 #
-                if rule_state.active:
+                if (rule.condition!=AlarmCondition.INVALID) and (rule_state.active):
 
                     rule_state.active = False
 
@@ -97,6 +101,8 @@ class AlarmEngine:
             #
             # VALID MEASUREMENT
             #
+            if rule.condition==AlarmCondition.INVALID:
+                continue
 
             #
             # Clear invalid-measurement alarm
@@ -187,16 +193,16 @@ class AlarmEngine:
         ) -> bool:
         
         if operator == ComparisonOperator.LT:
-            return value < threshold
+            return float(value) < threshold
         elif operator == ComparisonOperator.LE:
-            return value <= threshold
+            return float(value) <= threshold
         elif operator == ComparisonOperator.EQ:
-            return value == threshold
+            return float(value) == threshold
         elif operator == ComparisonOperator.NE:
-            return value != threshold
+            return float(value) != threshold
         elif operator == ComparisonOperator.GE:
-            return value >= threshold
+            return float(value) >= threshold
         elif operator == ComparisonOperator.GT:
-            return value > threshold
+            return float(value) > threshold
 
         raise RuntimeError(f"Unknown comparison operator {operator}")
