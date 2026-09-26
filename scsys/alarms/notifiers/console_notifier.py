@@ -5,6 +5,8 @@ from ..alarm_base import (AlarmEvent, AlarmSeverity)
 from .notifier_base import AlarmNotifier
 
 class ConsoleNotifier(AlarmNotifier):
+    type_name:str = "console" #This is the class member used for the automatic discovery as a key in the NOTIFIERS_CLASSES dictionary
+
     def __init__(self, severity:AlarmSeverity=AlarmSeverity.INFO):
         self.severity = severity
     #

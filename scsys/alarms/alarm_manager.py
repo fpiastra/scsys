@@ -6,7 +6,7 @@ import time
 
 from .alarm_base import (AlarmEvent, AlarmEventType)
 from .alarm_storage import AlarmStorage
-from .notifiers.console_notifier import AlarmNotificationManager
+from .notification_manager import AlarmNotificationManager
 
 
 class AlarmState(Enum):

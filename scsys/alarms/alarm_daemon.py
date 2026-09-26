@@ -1,5 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass
+import argparse
 
 import socket
 import signal
@@ -23,7 +24,7 @@ class AlarmDaemon:
 
         self.socket_path = self.runtime_dir / 'sockets' / 'alarmd.sock'
         
-        self.alarm_manager = AlarmManager()
+        self.alarm_manager = AlarmManager( config.alarmd )
 
         self.server = None
         self.running = False
@@ -166,3 +167,47 @@ class AlarmDaemon:
         self.shutdown()
     #
 
+def main():
+
+    parser = argparse.ArgumentParser(
+        prog="scd",
+        description="Slow Control Alarm Daemon"
+    )
+
+    parser.add_argument(
+        "config_file",
+        help="Path to the daemon configuration file"
+    )
+
+    args = parser.parse_args()
+
+    daemon = None
+    fail = False
+
+    try:
+
+        daemon = AlarmDaemon(
+            args.config_file
+        )
+
+        daemon.run()
+
+    except KeyboardInterrupt:
+
+        print("Stopping daemon...")
+
+    except Exception as e:
+
+        print(f"ERROR: {e}")
+        fail = True
+
+    finally:
+
+        if daemon is not None:
+            daemon.cleanup()
+
+    return int(fail)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -4,7 +4,7 @@ from .notifiers import (discover_notifiers, get_notifier)
 from .notifiers.console_notifier import ConsoleNotifier
 
 class AlarmNotificationManager:
-    def __init__(self):
+    def __init__(self, notifiers_lst:list[dict]):
         discover_notifiers()
 
         self.notifiers: list[AlarmNotifier] = []
