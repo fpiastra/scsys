@@ -96,12 +96,20 @@ class ProcessManager:
         try:
             proc = subprocess.Popen(
                 [
-                    sys.executable,
-                    "-m",
-                    "scsys.scd.device_runner",
-                    str(self.launch_file(device_info.name))
-                ],
-                start_new_session=True,
+                    "tmux",
+                    "new-session",
+                    "-d",
+                    "-s",
+                    f"scsys-{device_info.name}",
+                    "--",
+                    "bash",
+                    "-lc",
+                    (
+                        f"{sys.executable} -m scsys.scd.device_runner "
+                        f"{self.launch_file(device_info.name)}; "
+                        "exec bash"
+                    ),
+                ]
             )
         #
         except Exception as err:
@@ -124,17 +132,17 @@ class ProcessManager:
             # Check whether the child process has terminated.
             # poll() returns None if it is still running,
             # otherwise it returns the process exit code.   
-            if proc.poll() is not None:
-                
-                print(
-                    f'Process for device "{device_info.name}" '
-                    f'terminated during startup with code {proc.poll()}.'
-                )
-
-                self.launch_file(device_info.name).unlink(missing_ok=True)
-                self.runtime_file(device_info.name).unlink(missing_ok=True)
-
-                return False
+            #if proc.poll() is not None:
+            #    
+            #    print(
+            #        f'Process for device "{device_info.name}" '
+            #        f'terminated during startup with code {proc.poll()}.'
+            #    )
+            #
+            #    self.launch_file(device_info.name).unlink(missing_ok=True)
+            #    self.runtime_file(device_info.name).unlink(missing_ok=True)
+            #
+            #    return False
             #
             
             runtime_info = self.load_runtime_info(device_info.name)
@@ -158,12 +166,19 @@ class ProcessManager:
                 print(
                     f'Process for device "{device_info.name}" '
                     f'failed to start within {startup_timeout} s.'
+                    f'See tmux session "scsys-{device_info.name}".'
                 )
                 
-                if proc.poll() is None:
-                    proc.terminate()
-                    proc.wait(timeout=2)
+                #if proc.poll() is None:
+                #    proc.terminate()
+                #    proc.wait(timeout=2)
                 #
+                #subprocess.run(
+                #    ["tmux", "kill-session", "-t", f"scsys-{device_info.name}"],
+                #    check=False,
+                #    stdout=subprocess.DEVNULL,
+                #    stderr=subprocess.DEVNULL
+                #)
                 self.launch_file(device_info.name).unlink(missing_ok=True)
                 self.runtime_file(device_info.name).unlink(missing_ok=True)
                 return False
@@ -279,7 +294,7 @@ class ProcessManager:
         if not "success" in ret.keys():
             print(f'ERROR: Invalid response protocol from device "{name}": expected the key "success".')
             return False
-        return ret.get('success')  
+        return ret.get('success')
     #
 
     def restart(self, device_info:DeviceInfo):
