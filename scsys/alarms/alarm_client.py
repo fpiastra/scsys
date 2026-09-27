@@ -21,9 +21,16 @@ class AlarmClient:
     #
 
     def send_event(self, event:AlarmEvent) -> dict[str, Any]:
+
+        payload = asdict(event)
+
+        #Need this because the AlarmEventType is a derived class of Enum and can't be serialized to a JSON
+        if event.evtype is not None:
+            payload["evtype"] = event.evtype.name
+
         return self._send_message(
             "event",
-            asdict(event)
+            payload
         )
     
     def _send_message(self, msg_type: str, payload: dict | None = None) -> dict[str, Any]:
@@ -47,6 +54,7 @@ class AlarmClient:
 
                 reply = self._parse_reply(sock.recv(4096))
             except (OSError, TypeError, ValueError, RuntimeError) as err:
+                print(f'ERROR -> AlarmClint._send_message: {err}')
                 return {'success': False,
                         'error': str(err)}
         
