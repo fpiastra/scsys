@@ -1,6 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass
 import argparse
+import time
 
 import socket
 import signal
@@ -24,20 +25,20 @@ class AlarmDaemon:
 
         self.socket_path = self.runtime_dir / 'sockets' / 'alarmd.sock'
         
-        self.alarm_manager = AlarmManager( config.alarmd )
+        self.alarm_manager = AlarmManager(config.alarmd)
 
         self.server = None
         self.running = False
     #
 
     def run(self):
-        print("[alarmd] Starting alarm daemon...")
+        print("[alarmd] DEBUG: Starting alarm daemon...")
 
         self.lock.acquire()
-        print(f"[alarmd] Lock acquired: {self.lock.lock_path}")
+        print(f"[alarmd] DETAIL: Lock acquired: {self.lock.lock_path}")
 
         self._setup_socket()
-        print(f"[alarmd] Listening on socket: {self.socket_path}")
+        print(f"[alarmd] DETAIL: Listening on socket: {self.socket_path}")
 
         # Install signals
         signal.signal(
@@ -51,21 +52,21 @@ class AlarmDaemon:
         )
 
         self.running = True
-        print("[alarmd] Alarm daemon is running.")
+        print("[alarmd] INFO: Alarm daemon is running.")
 
         try:
             self.event_loop()
         finally:
-            print("[alarmd] Cleaning up...")
+            print("[alarmd] DEBUG: Cleaning up...")
             self.cleanup()
-            print("[alarmd] Alarm daemon stopped.")
+            print("[alarmd] INFO: Alarm daemon stopped.")
         #
     #
 
     def event_loop(self):
-
         while self.running:
             self._poll_socket()
+            time.sleep(0.01)
     #
 
     def _poll_socket(self):
@@ -75,7 +76,7 @@ class AlarmDaemon:
             # There is currently no connection
             return
     
-        print("[alarmd] Received connection.")
+        print("[alarmd] INFO: Received connection.")
     
         try:
             try:
@@ -85,10 +86,10 @@ class AlarmDaemon:
                 return
     
             if not data:
-                print("[alarmd] Empty request received.")
+                print("[alarmd] DETAIL: Empty request received.")
                 return
     
-            print(f"[alarmd] Received request: {data.decode('utf-8', errors='replace')}")
+            print(f"[alarmd] DEBUG: Received request: {data.decode('utf-8', errors='replace')}")
     
             try:
                 request = json.loads(
@@ -108,7 +109,7 @@ class AlarmDaemon:
                 }
             else:
                 print(
-                    f"[alarmd] Request type: "
+                    f"[alarmd] DETAIL: Request type: "
                     f"{request.get('msg_type')}"
                 )
     
@@ -116,7 +117,7 @@ class AlarmDaemon:
                     response = self._handle_request(request)
                 except Exception as err:
                     print(
-                        f"[alarmd] ERROR while handling request: "
+                        f"[alarmd] ERROR: failed handling the request: "
                         f"{type(err).__name__}: {err}"
                     )
     
@@ -125,7 +126,7 @@ class AlarmDaemon:
                         "message": f"Request error: {err}"
                     }
     
-            print(f"[alarmd] Sending response: {response}")
+            print(f"[alarmd] DEBUG: Sending response: {response}")
     
             conn.sendall(
                 json.dumps(response).encode()

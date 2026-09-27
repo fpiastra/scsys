@@ -4,7 +4,7 @@ from enum import Enum, auto
 from datetime import datetime
 import time
 
-from .alarm_base import (AlarmEvent, AlarmEventType)
+from .alarm_base import (AlarmEvent, AlarmEventType, AlarmSeverity)
 from .alarm_storage import AlarmStorage
 from .notification_manager import AlarmNotificationManager
 
@@ -45,7 +45,16 @@ class AlarmManager:
     def process_event_request(self, ev_dict: dict) -> bool:
         print(f"[alarmd] DEBUG: Processing alarm event request: {ev_dict}")
         try:
-            event = AlarmEvent(**ev_dict)
+            event_data = dict(ev_dict)
+
+            #Reconstructing the Enum and IntEnum types from the JSON serialization to rebuild the AlarmEvent
+            if event_data.get("severity") is not None:
+                event_data["severity"] = AlarmSeverity(event_data["severity"])
+            #
+            if event_data.get("evtype") is not None:
+                event_data["evtype"] = AlarmEventType[event_data["evtype"].upper()]
+            #
+            event = AlarmEvent(**event_data)
         except Exception as err:
             print(
                 "[alarmd] ERROR: Failed to create AlarmEvent: "
@@ -59,7 +68,7 @@ class AlarmManager:
             }
 
         print(
-            f"[alarmd] DETAIL: AlarmEvent created: "
+            f"[alarmd] DETAIL: AlarmEvent created:\n    "
             f"{event.source}.{event.name} "
             f"(active={event.active}, "
             f"severity={event.severity}, "
